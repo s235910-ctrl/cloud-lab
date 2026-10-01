@@ -7,8 +7,12 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Kết nối MongoDB Atlas (Câu 33)
-mongoose.connect(process.env.MONGODB_URI)
+// Kết nối MongoDB Atlas (Câu 33) - Tự động dự phòng nếu biến môi trường chưa nạp
+const mongoURI = process.env.MONGO_URI 
+  || process.env.MONGODB_URI 
+  || "mongodb+srv://clouduser:nhan123@cluster0.b5jpsry.mongodb.net/cloud_lab?retryWrites=true&w=majority";
+
+mongoose.connect(mongoURI)
   .then(() => console.log("MongoDB Connected"))
   .catch(err => console.error("MongoDB Connection Error:", err));
 

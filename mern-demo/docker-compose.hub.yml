@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  backend:
+    image: truongnguyenhieunhan/mern-backend:1.0
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb+srv://clouduser:nhan123@cluster0.b5jpsry.mongodb.net/cloud_lab?retryWrites=true&w=majority
+      - PORT=5000
+    dns:
+      - 8.8.8.8
+
+  frontend:
+    image: truongnguyenhieunhan/mern-frontend:1.0
+    ports:
+      - "3000:5173"   # Sửa chỗ này từ 3000:3000 thành 3000:5173
+    depends_on:
+      - backend
