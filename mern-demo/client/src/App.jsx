@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 
+// Khai báo sẵn API base URL cho môi trường production hoặc development
+const API_BASE_URL = 'https://mern-backend-235910.onrender.com';
+
 function App() {
   const [students, setStudents] = useState([]);
   const [form, setForm] = useState({ studentId: '', name: '', email: '' });
@@ -7,7 +10,7 @@ function App() {
   // 1. Sửa URL lấy danh sách
   const fetchStudents = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/students');
+      const res = await fetch(`${API_BASE_URL}/api/students`);
       const data = await res.json();
       setStudents(data);
     } catch (err) {
@@ -23,7 +26,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await fetch('http://localhost:5000/api/students', {
+      await fetch(`${API_BASE_URL}/api/students`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
@@ -38,7 +41,7 @@ function App() {
   // 3. Sửa URL xóa sinh viên
   const handleDelete = async (id) => {
     try {
-      await fetch(`http://localhost:5000/api/students/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/api/students/${id}`, { method: 'DELETE' });
       fetchStudents();
     } catch (err) {
       console.error('Lỗi xóa sinh viên:', err);
@@ -47,7 +50,6 @@ function App() {
 
   return (
     <div style={{ padding: '30px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
-      {/* Đã cập nhật tiêu đề cho Phiên bản 2.0 */}
       <h2>QUẢN LÝ SINH VIÊN - PHIÊN BẢN 2.0</h2>
       
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
