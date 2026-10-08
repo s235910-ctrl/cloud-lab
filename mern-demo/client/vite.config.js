@@ -6,9 +6,10 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://backend:5000', // Điều hướng request từ frontend sang container backend
+        target: 'https://mern-backend-235910.onrender.com',
         changeOrigin: true
       }
     }
