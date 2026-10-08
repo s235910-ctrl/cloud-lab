@@ -14,6 +14,6 @@ services:
   frontend:
     image: truongnguyenhieunhan/mern-frontend:1.0
     ports:
-      - "3000:5173"   # Sửa chỗ này từ 3000:3000 thành 3000:5173
+      - "3000:5173"
     depends_on:
       - backend
