@@ -7,7 +7,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Kết nối MongoDB Atlas (Câu 33) - Tự động dự phòng nếu biến môi trường chưa nạp
+// Kết nối MongoDB Atlas - Tự động dự phòng nếu biến môi trường chưa nạp
 const mongoURI = process.env.MONGO_URI 
   || process.env.MONGODB_URI 
   || "mongodb+srv://clouduser:nhan123@cluster0.b5jpsry.mongodb.net/cloud_lab?retryWrites=true&w=majority";
@@ -16,7 +16,7 @@ mongoose.connect(mongoURI)
   .then(() => console.log("MongoDB Connected"))
   .catch(err => console.error("MongoDB Connection Error:", err));
 
-// Câu 35: Tạo Schema và Model Student
+// Tạo Schema và Model Student
 const studentSchema = new mongoose.Schema({
   studentId: { type: String, required: true },
   name: { type: String, required: true },
@@ -29,7 +29,16 @@ app.get('/api/hello', (req, res) => {
   res.json({ message: "Backend đang hoạt động!" });
 });
 
-// Câu 36: GET /api/students - Lấy danh sách sinh viên
+// Health Check Endpoint cho Cloud PaaS Monitoring (Buổi 6)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'UP',
+    timestamp: new Date(),
+    uptime: process.uptime()
+  });
+});
+
+// GET /api/students - Lấy danh sách sinh viên
 app.get('/api/students', async (req, res) => {
   try {
     const students = await Student.find();
@@ -39,7 +48,7 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
-// Câu 37: POST /api/students - Thêm sinh viên mới
+// POST /api/students - Thêm sinh viên mới
 app.post('/api/students', async (req, res) => {
   try {
     const student = await Student.create(req.body);
@@ -49,7 +58,7 @@ app.post('/api/students', async (req, res) => {
   }
 });
 
-// Câu 38: PUT /api/students/:id - Cập nhật sinh viên
+// PUT /api/students/:id - Cập nhật sinh viên
 app.put('/api/students/:id', async (req, res) => {
   try {
     const updatedStudent = await Student.findByIdAndUpdate(
@@ -63,7 +72,7 @@ app.put('/api/students/:id', async (req, res) => {
   }
 });
 
-// Câu 39: DELETE /api/students/:id - Xóa sinh viên
+// DELETE /api/students/:id - Xóa sinh viên
 app.delete('/api/students/:id', async (req, res) => {
   try {
     await Student.findByIdAndDelete(req.params.id);
