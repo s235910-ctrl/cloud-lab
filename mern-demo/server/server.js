@@ -5,9 +5,26 @@ require('dotenv').config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
 
-// Kết nối MongoDB Atlas - Tự động dự phòng nếu biến môi trường chưa nạp
+// Cấu hình CORS bảo mật và đồng bộ với biến CLIENT_URL trên Render
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'http://localhost:3000'
+].filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(null, new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+// Kết nối MongoDB Atlas
 const mongoURI = process.env.MONGO_URI 
   || process.env.MONGODB_URI 
   || "mongodb+srv://clouduser:nhan123@cluster0.b5jpsry.mongodb.net/cloud_lab?retryWrites=true&w=majority";
@@ -29,7 +46,7 @@ app.get('/api/hello', (req, res) => {
   res.json({ message: "Backend đang hoạt động!" });
 });
 
-// Health Check Endpoint cho Cloud PaaS Monitoring (Buổi 6)
+// Health Check Endpoint cho Cloud PaaS Monitoring
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'UP',
