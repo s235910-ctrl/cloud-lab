@@ -1,7 +1,7 @@
-FROM node:20
+FROM node:18-alpine
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install
 COPY . .
 EXPOSE 5000
 CMD ["node", "server.js"]
