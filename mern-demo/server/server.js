@@ -3,103 +3,118 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
+const Food = require('./models/Food');
+
 const app = express();
-app.use(express.json());
 
-// Cấu hình CORS bảo mật và đồng bộ với biến CLIENT_URL trên Render
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  'http://localhost:5173',
-  'http://localhost:3000'
-].filter(Boolean);
-
+// Cấu hình CORS mở rộng cho môi trường Codespaces & Render
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
-      callback(null, true);
-    } else {
-      callback(null, new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+app.use(express.json());
+
 // Kết nối MongoDB Atlas
-const mongoURI = process.env.MONGO_URI 
-  || process.env.MONGODB_URI 
-  || "mongodb+srv://clouduser:nhan123@cluster0.b5jpsry.mongodb.net/cloud_lab?retryWrites=true&w=majority";
-
+const mongoURI = process.env.MONGO_URI || process.env.MONGODB_URI;
 mongoose.connect(mongoURI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.error("MongoDB Connection Error:", err));
+    .then(() => console.log('MongoDB Atlas đã kết nối'))
+    .catch(err => console.error('Lỗi kết nối MongoDB:', err));
 
-// Tạo Schema và Model Student
-const studentSchema = new mongoose.Schema({
-  studentId: { type: String, required: true },
-  name: { type: String, required: true },
-  email: { type: String, required: true }
-});
-const Student = mongoose.model('Student', studentSchema);
-
-// API Hello
-app.get('/api/hello', (req, res) => {
-  res.json({ message: "Backend đang hoạt động!" });
+// Route gốc
+app.get('/', (req, res) => {
+    res.send('Backend Quan Ly Mon An dang chay!');
 });
 
-// Health Check Endpoint cho Cloud PaaS Monitoring
+// Endpoint kiểm tra trạng thái Backend
 app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'UP',
-    timestamp: new Date(),
-    uptime: process.uptime()
-  });
+    res.status(200).json({ status: 'OK', message: 'Backend is running' });
 });
 
-// GET /api/students - Lấy danh sách sinh viên
-app.get('/api/students', async (req, res) => {
-  try {
-    const students = await Student.find();
-    res.json(students);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+// 1. Lấy danh sách món ăn & Tìm kiếm
+app.get('/api/foods', async (req, res) => {
+    try {
+        const { search } = req.query;
+        let query = {};
+        if (search) {
+            query = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { category: { $regex: search, $options: 'i' } },
+                    { cuisine: { $regex: search, $options: 'i' } }
+                ]
+            };
+        }
+        const foods = await Food.find(query);
+        res.json(foods);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-// POST /api/students - Thêm sinh viên mới
-app.post('/api/students', async (req, res) => {
-  try {
-    const student = await Student.create(req.body);
-    res.status(201).json(student);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+// 2. Xem thông tin một món ăn theo ID
+app.get('/api/foods/:id', async (req, res) => {
+    try {
+        const food = await Food.findById(req.params.id);
+        if (!food) return res.status(404).json({ message: 'Không tìm thấy món ăn' });
+        res.json(food);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-// PUT /api/students/:id - Cập nhật sinh viên
-app.put('/api/students/:id', async (req, res) => {
-  try {
-    const updatedStudent = await Student.findByIdAndUpdate(
-      req.params.id, 
-      req.body, 
-      { new: true }
-    );
-    res.json(updatedStudent);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+// 3. Thêm món ăn mới (Kiểm tra trùng foodId)
+app.post('/api/foods', async (req, res) => {
+    const { foodId, name, category, cuisine, ingredients, price, quantity, description, imageUrl } = req.body;
+    
+    if (!foodId || !name || !price || !quantity) {
+        return res.status(400).json({ message: 'Vui lòng điền đầy đủ các thông tin bắt buộc' });
+    }
+
+    try {
+        const existingFood = await Food.findOne({ foodId });
+        if (existingFood) {
+            return res.status(400).json({ message: 'Mã món ăn (foodId) đã tồn tại' });
+        }
+
+        const newFood = new Food({
+            foodId, name, category, cuisine, ingredients, price, quantity, description, imageUrl
+        });
+        await newFood.save();
+        res.status(201).json(newFood);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
 });
 
-// DELETE /api/students/:id - Xóa sinh viên
-app.delete('/api/students/:id', async (req, res) => {
-  try {
-    await Student.findByIdAndDelete(req.params.id);
-    res.json({ message: "Xóa sinh viên thành công" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+// 4. Cập nhật thông tin món ăn
+app.put('/api/foods/:id', async (req, res) => {
+    try {
+        const updatedFood = await Food.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true, runValidators: true }
+        );
+        if (!updatedFood) return res.status(404).json({ message: 'Không tìm thấy món ăn' });
+        res.json(updatedFood);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+});
+
+// 5. Xóa món ăn
+app.delete('/api/foods/:id', async (req, res) => {
+    try {
+        const deletedFood = await Food.findByIdAndDelete(req.params.id);
+        if (!deletedFood) return res.status(404).json({ message: 'Không tìm thấy món ăn' });
+        res.json({ message: 'Xóa món ăn thành công' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server đang chạy tại port ${PORT}`);
+    console.log(`Backend đang chạy tại cổng ${PORT}`);
 });
